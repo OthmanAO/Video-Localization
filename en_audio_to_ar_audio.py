@@ -322,7 +322,7 @@ def main():
     translation_file = "translation.txt"
     tts_output_file = "arabic_speech.wav"
     audioless_video_file = "audioless_video.mp4"
-    output_file = "vid.mp4"
+    output_file = "final_video.mp4"
     
     
    

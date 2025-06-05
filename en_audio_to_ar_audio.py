@@ -6,6 +6,7 @@ import subprocess
 
 
 
+
 class FanarAPIClient:
     """Client for interacting with Fanar API services."""
     
@@ -15,6 +16,7 @@ class FanarAPIClient:
         self.api_key = api_key
         self.base_url = "https://api.fanar.qa/v1"
         self.headers = {"Authorization": f"Bearer {api_key}"}
+        
         
     
     def fanar_chat(self, messages, model="Fanar", max_tokens=1000):
@@ -142,6 +144,22 @@ class FanarAPIClient:
                 raise Exception(f"Network error: {e}")
         except Exception as e:
             raise Exception(f"Error processing audio file: {e}")
+    
+    def seperate_music_from_audio(self, audio_file, output_file):
+        """
+        Separate music from audio file using Spleeter or similar tool.
+        
+        Args:
+            audio_file (str): Path to input audio file
+            output_file (str): Path for output audio file without music
+            
+        Returns:
+            str: Path to output audio file
+        """
+        # This function is a placeholder for music separation logic.
+        # TODO: Implement music seperation using a library like Spleeter or a custom model.
+        raise NotImplementedError("Music separation is not implemented in this example.")
+    
     
     def translate_text(self, text, source_lang="en", target_lang="ar", model="Fanar-Shaheen-MT-1"):
         """
@@ -340,7 +358,12 @@ def main():
             print(f"Error: Audio file '{audio_file}' was not created")
             return
         
-        # Step 3: Transcribe audio to text using Fanar API
+        # Step 3: Seperate music from audio
+        print("Seperate music from audio...")
+        # Note: This step is not implemented in this example, but you can use a library like Spleeter or a custom model for this.
+        
+        
+        # Step 4: Transcribe audio to text using Fanar API
         print("Transcribing audio to text...")
         transcription_result = client.transcribe_audio_fanar(audio_file, model="Fanar-Aura-STT-1")
         
@@ -353,7 +376,7 @@ def main():
         save_text_to_file(transcription_text, transcription_file)
         print("Transcription completed successfully!")
         
-        # Step 4: Add grammar to transcription
+        # Step 5: Add grammar to transcription
         print("Adding grammar to transcription...")
         messages = [
             {"role": "system", "content": "You are a helpful assistant."},
@@ -366,13 +389,13 @@ def main():
         save_text_to_file(grammar_text, transcription_file)
         print("Grammar added successfully!")
                 
-        # Step 5: Translate text to Arabic
+        # Step 6: Translate text to Arabic
         print("Translating text to Arabic...")
         translated_text = client.translate_text(transcription_text)
         save_text_to_file(translated_text, translation_file)
         print("Translation completed successfully!")
         
-        # Step 6: Process translation for better TTS performance
+        # Step 7: Process translation for better TTS performance
         print("Adding grammar to translation...")
         messages = [
             {"role": "system", "content": "أنت مساعد لغوي مختص بتحسين النصوص لتحويلها إلى كلام (TTS) بطريقة طبيعية وسلسة."},
@@ -387,12 +410,12 @@ def main():
         
         translated_text = load_text_from_file(translation_file)
         
-        # Step 7: Convert translated text to speech
+        # Step 8: Convert translated text to speech
         print("Converting translated text to speech...")
         output_audio = client.text_to_speech(translated_text, tts_output_file)
         print(f"Text-to-speech conversion completed! Audio saved to {output_audio}")
         
-        # Step 8: Combine audio and video
+        # Step 9: Combine audio and video
         print("Combining audio and video...")
         combine_audio_video(tts_output_file, audioless_video_file, output_file)  
         print("Audio and video combined successfully!")

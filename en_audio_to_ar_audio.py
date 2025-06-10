@@ -425,6 +425,7 @@ def main():
         print("="*50)
         print(f"Original video: {os.path.abspath(video_file)}")
         print(f"Extracted audio: {os.path.abspath(audio_file)}")
+        print(f"Audioless video: {os.path.abspath(audioless_video_file)}")
         print(f"Transcription: {os.path.abspath(transcription_file)}")
         print(f"Grammar added transcription: {os.path.abspath(transcription_file)}")
         print(f"Translation: {os.path.abspath(translation_file)}")

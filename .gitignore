@@ -1,3 +1,83 @@
-# Files to ignore
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+tts-venv/
+env/
+ENV/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Audio/Video processing files
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.mkv
+demucs_output/
+transcription.txt
+translation.txt
+
+# Downloaded/uploaded files
+downloaded_youtube_video.mp4
+uploaded_video.mp4
+final_video.mp4
+audioless_video.mp4
+arabic_speech.wav
+arabic_speech_with_music.wav
+english_audio.wav
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 

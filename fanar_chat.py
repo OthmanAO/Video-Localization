@@ -1,6 +1,5 @@
 import os
-from dotenv import load_dotenv
-from en_audio_to_ar_audio import FanarAPIClient
+from dubbing_utils import FanarAPIClient
 
 def main():
     # Load environment variables

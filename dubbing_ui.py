@@ -38,7 +38,7 @@ def mix_music_and_tts(music_path, tts_path, output_path):
 load_dotenv()
 
 st.set_page_config(page_title="Video Dubbing (English to Arabic)", layout="centered")
-st.title("🎬 Video Dubbing: English to Arabic")
+st.title("ideo Dubbing: English to Arabic")
 st.write("Upload an English video, and get a dubbed Arabic version!")
 
 # API Key
@@ -77,7 +77,7 @@ if video_file:
             st.stop()
 
     # Step 1.5: Separate music from English audio using Demucs
-    with st.spinner("Separating music from English audio (Demucs)..."):
+    with st.spinner("Separating music from English audio..."):
         try:
             music_path = separate_music_with_demucs(audio_file)
             st.success("Music separated from English audio!")

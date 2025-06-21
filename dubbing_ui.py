@@ -6,6 +6,9 @@ import re
 from pydub import AudioSegment
 import subprocess
 import glob
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
+import shutil
 
 def separate_music_with_demucs(audio_file, output_dir='demucs_output'):
     os.makedirs(output_dir, exist_ok=True)
@@ -34,12 +37,143 @@ def mix_music_and_tts(music_path, tts_path, output_path):
     mixed = music.overlay(tts)
     mixed.export(output_path, format='wav')
 
+def download_youtube_video(url, output_path="downloaded_youtube_video.mp4"):
+    """Download a YouTube video and return the path to the downloaded file using pytubefix."""
+    try:
+        # Basic URL validation
+        if not url or 'youtube.com' not in url and 'youtu.be' not in url:
+            raise ValueError("Please provide a valid YouTube URL")
+            
+        # Clean up URL (remove extra parameters)
+        if '&' in url:
+            url = url.split('&')[0]
+            
+        yt = YouTube(url, on_progress_callback=on_progress)
+        
+        # Show video info
+        try:
+            st.info(f"Video Title: {yt.title}")
+            st.info(f"Duration: {yt.length} seconds")
+        except:
+            st.info("Video info loading...")
+        
+        # Get the highest resolution stream
+        stream = yt.streams.get_highest_resolution()
+        if not stream:
+            raise RuntimeError("No suitable video stream found")
+        st.info(f"Downloading: {stream.resolution} quality")
+        
+        # Download the video
+        stream.download(filename=output_path)
+        
+        # Verify the file was downloaded
+        if not os.path.exists(output_path):
+            raise RuntimeError("Download completed but file not found")
+            
+        # Get file size
+        file_size = os.path.getsize(output_path) / (1024 * 1024)  # MB
+        st.info(f"Download completed! File size: {file_size:.2f} MB")
+            
+        return output_path
+    except Exception as e:
+        error_msg = str(e)
+        if "HTTP Error 400" in error_msg:
+            raise RuntimeError("YouTube API error. This might be due to region restrictions or video availability. Try a different video or check if the video is publicly available.")
+        elif "Video unavailable" in error_msg:
+            raise RuntimeError("This video is not available for download. It might be private, age-restricted, or region-blocked.")
+        else:
+            raise RuntimeError(f"Failed to download YouTube video: {error_msg}")
+
+def get_audio_duration(audio_file):
+    """Get the duration of an audio file in seconds."""
+    try:
+        audio = AudioSegment.from_file(audio_file)
+        return len(audio) / 1000  # Convert milliseconds to seconds
+    except Exception as e:
+        st.warning(f"Could not determine audio duration: {e}")
+        return None
+
+def select_transcription_model(audio_duration):
+    """Select the appropriate transcription model based on audio duration."""
+    if audio_duration is None:
+        # Default to short-form model if duration cannot be determined
+        return "Fanar-Aura-STT-1"
+    
+    # Use long-form model for audio longer than 30 seconds
+    if audio_duration > 30:
+        return "Fanar-Aura-STT-1"
+    else:
+        return "Fanar-Aura-STT-1"
+
+def get_video_title(input_video_path, youtube_url=None):
+    """Extract video title from YouTube URL or use filename for uploaded videos."""
+    if youtube_url:
+        try:
+            yt = YouTube(youtube_url)
+            if yt.title and yt.title.strip():
+                return yt.title.strip()
+        except Exception as e:
+            st.warning(f"Could not extract YouTube title: {e}")
+    
+    # For uploaded videos, use the filename without extension
+    if input_video_path:
+        base_name = os.path.splitext(os.path.basename(input_video_path))[0]
+        # Remove common prefixes/suffixes
+        base_name = base_name.replace("uploaded_video", "").replace("downloaded_youtube_video", "")
+        if base_name.strip():
+            return base_name.strip()
+    
+    return "video"
+
+def sanitize_filename(filename):
+    """Remove invalid characters from filename."""
+    # Remove or replace invalid characters
+    invalid_chars = '<>:"/\\|?*'
+    for char in invalid_chars:
+        filename = filename.replace(char, '_')
+    
+    # Limit length
+    if len(filename) > 100:
+        filename = filename[:100]
+    
+    return filename
+
+def cleanup_temp_files(temp_files_list, keep_final_video=True):
+    """Clean up temporary files after processing."""
+    cleaned_files = []
+    for file_path in temp_files_list:
+        if os.path.exists(file_path):
+            try:
+                # Don't delete the final video if keep_final_video is True
+                if keep_final_video and file_path.endswith('.mp4') and 'arabic dub' in file_path:
+                    continue
+                    
+                os.remove(file_path)
+                cleaned_files.append(file_path)
+            except Exception as e:
+                st.warning(f"Could not remove {file_path}: {e}")
+    
+    if cleaned_files:
+        st.info(f"🧹 Cleaned up {len(cleaned_files)} temporary files")
+    
+    return cleaned_files
+
+def cleanup_demucs_output():
+    """Clean up Demucs output directory."""
+    demucs_dir = "demucs_output"
+    if os.path.exists(demucs_dir):
+        try:
+            shutil.rmtree(demucs_dir)
+            st.info("🧹 Cleaned up Demucs output directory")
+        except Exception as e:
+            st.warning(f"Could not remove Demucs directory: {e}")
+
 # Load environment variables
 load_dotenv()
 
 st.set_page_config(page_title="Video Dubbing (English to Arabic)", layout="centered")
-st.title("ideo Dubbing: English to Arabic")
-st.write("Upload an English video, and get a dubbed Arabic version!")
+st.title("Video Dubbing: English to Arabic")
+st.write("Upload an English video or paste a YouTube URL, and get a dubbed Arabic version!")
 
 # API Key
 fanar_api_key = os.getenv("FANAR_API_KEY")
@@ -49,23 +183,69 @@ if not fanar_api_key:
 
 client = FanarAPIClient(fanar_api_key)
 
-# File upload
-video_file = st.file_uploader("Upload your English video (mp4)", type=["mp4"])
+st.subheader("Step 1: Choose Video Input")
+input_video_path = None
 
-if video_file:
-    # Save uploaded file
+# YouTube URL input
+youtube_url = st.text_input("Paste a YouTube video URL", placeholder="https://www.youtube.com/watch?v=...")
+
+# File upload
+video_file = st.file_uploader("Or upload your English video (mp4)", type=["mp4"])
+
+# Handle input selection
+if youtube_url and video_file:
+    st.warning("Both YouTube URL and file upload detected. YouTube URL will take precedence.")
+    video_file = None
+
+if youtube_url:
+    if st.button("Download from YouTube"):
+        with st.spinner("Downloading video from YouTube..."):
+            try:
+                input_video_path = download_youtube_video(youtube_url)
+                st.success(f"YouTube video downloaded successfully!")
+                st.info(f"Video saved as: {input_video_path}")
+            except Exception as e:
+                st.error(f"Download failed: {str(e)}")
+                st.stop()
+elif video_file:
     input_video_path = "uploaded_video.mp4"
     with open(input_video_path, "wb") as f:
         f.write(video_file.read())
-    st.success("Video uploaded!")
+    st.success("Video uploaded successfully!")
 
+# Process the video if we have one
+if input_video_path and os.path.exists(input_video_path):
+    st.success("✅ Video ready for processing!")
+    
+    # Extract video title for final filename
+    video_title = get_video_title(input_video_path, youtube_url)
+    sanitized_title = sanitize_filename(video_title)
+    final_video_filename = f"{sanitized_title} - arabic dub.mp4"
+    
+    # Show video info
+    file_size = os.path.getsize(input_video_path) / (1024 * 1024)  # MB
+    st.info(f"📁 Video file: {input_video_path} ({file_size:.2f} MB)")
+    st.info(f"🎬 Video title: {video_title}")
+    st.info(f"📝 Final output will be: {final_video_filename}")
+    
+    # Optional: Show video preview
+    if st.checkbox("Show video preview"):
+        st.video(input_video_path)
+    
+    st.subheader("Step 2: Processing Pipeline")
+    
+    # User preferences
+    st.write("**Processing Options:**")
+    auto_cleanup = st.checkbox("🧹 Enable automatic cleanup of temporary files", value=True, 
+                              help="Automatically remove temporary files after processing is complete")
+    
     # File paths
     audio_file = "english_audio.wav"
     transcription_file = "transcription.txt"
     translation_file = "translation.txt"
     tts_output_file = "arabic_speech.wav"
     audioless_video_file = "audioless_video.mp4"
-    output_file = "final_video.mp4"
+    output_file = final_video_filename
 
     # Step 1: Extract audio
     with st.spinner("Extracting audio from video..."):
@@ -88,7 +268,34 @@ if video_file:
     # Step 2: Transcribe audio
     with st.spinner("Transcribing audio to text..."):
         try:
-            transcription_result = client.transcribe_audio_fanar(audio_file, model="Fanar-Aura-STT-1")
+            # Determine audio duration and select appropriate model
+            audio_duration = get_audio_duration(audio_file)
+            auto_selected_model = select_transcription_model(audio_duration)
+            
+            if audio_duration:
+                st.info(f"Audio duration: {audio_duration:.1f} seconds")
+            
+            # Allow user to override model selection
+            st.subheader("Transcription Model Selection")
+            st.write("**Available Models:**")
+            st.write("- **Fanar-Aura-STT-1**: Optimized for short audio clips (up to 20-30 seconds)")
+            st.write("- **Fanar-Aura-STT-LF-1**: Optimized for long-form transcription of longer audio files")
+            
+            model_options = ["Auto-select (Recommended)", "Fanar-Aura-STT-1", "Fanar-Aura-STT-LF-1"]
+            selected_model_option = st.selectbox(
+                "Choose transcription model:",
+                model_options,
+                index=0
+            )
+            
+            if selected_model_option == "Auto-select (Recommended)":
+                selected_model = auto_selected_model
+                st.info(f"Auto-selected model: {selected_model}")
+            else:
+                selected_model = selected_model_option
+                st.info(f"Manually selected model: {selected_model}")
+            
+            transcription_result = client.transcribe_audio_fanar(audio_file, model=selected_model)
             transcription_text = transcription_result.get("text", "")
             if not transcription_text:
                 transcription_text = str(transcription_result)
@@ -211,7 +418,33 @@ if video_file:
                 combine_audio_video(tts_output_file, "audioless_video.mp4", output_file)
                 st.success("Dubbed video created!")
                 with open(output_file, "rb") as f:
-                    st.download_button("Download Dubbed Video", f, file_name="dubbed_arabic_video.mp4")
+                    st.download_button("Download Dubbed Video", f, file_name=final_video_filename)
+                
+                # Automatic cleanup of temporary files
+                if auto_cleanup:
+                    st.subheader("🧹 Cleanup")
+                    temp_files = [
+                        audio_file,
+                        transcription_file,
+                        translation_file,
+                        tts_output_file,
+                        audioless_video_file,
+                        "arabic_speech_with_music.wav"
+                    ]
+                    
+                    # Add music path if it exists
+                    if 'music_path' in locals() and music_path and os.path.exists(music_path):
+                        temp_files.append(music_path)
+                    
+                    # Clean up temporary files
+                    cleaned_files = cleanup_temp_files(temp_files, keep_final_video=True)
+                    cleanup_demucs_output()
+                    
+                    st.success("✅ Processing complete! Temporary files have been cleaned up.")
+                else:
+                    st.success("✅ Processing complete! Temporary files have been preserved.")
+                    st.info("💡 You can run the cleanup script later: `python cleanup.py`")
+                
             except Exception as e:
                 st.error(f"Combining audio and video failed: {e}")
-                st.stop() 
+                st.stop()

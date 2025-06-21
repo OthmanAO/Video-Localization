@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-from en_audio_to_ar_audio import FanarAPIClient, extract_audio_from_video, save_text_to_file, load_text_from_file, combine_audio_video
+from dubbing_utils import FanarAPIClient, extract_audio_from_video, save_text_to_file, load_text_from_file, combine_audio_video
 from dotenv import load_dotenv
 import re
 from pydub import AudioSegment

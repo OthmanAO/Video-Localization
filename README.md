@@ -32,7 +32,7 @@ This project provides a complete pipeline for **localizing English videos into A
 ```
 QCRI2025/
 ├── dubbing_ui.py          # Main Streamlit application
-├── en_audio_to_ar_audio.py # Core processing functions
+├── dubbing_utils.py       # Core processing functions and API client
 ├── fanar_chat.py          # Fanar API client utilities
 ├── cleanup.py             # Cleanup script for temporary files
 ├── requirements.txt       # Python dependencies

@@ -1,3 +1,6 @@
 requests
 moviepy
 python-dotenv
+streamlit
+pydub
+pytubefix

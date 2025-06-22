@@ -53,22 +53,6 @@ QCRI2025/
 
 ---
 
-## 🔑 Environment Variables
-
-Create a `.env` file in the project root with the following variable:
-
-- `FANAR_API_KEY`: Your Fanar API key (required for all API operations)
-
-Example `.env` file:
-
-```
-FANAR_API_KEY=your_fanar_api_key_here
-```
-
-**Note**: Make sure to add `.env` to your `.gitignore` file to keep your API key secure.
-
----
-
 ## 🧹 Cleanup
 
 The project generates temporary files during processing. To clean up:

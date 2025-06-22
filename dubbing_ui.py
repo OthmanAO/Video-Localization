@@ -101,7 +101,7 @@ def select_transcription_model(audio_duration):
     
     # Use long-form model for audio longer than 30 seconds
     if audio_duration > 30:
-        return "Fanar-Aura-STT-1"
+        return "Fanar-Aura-STT-LF-1"
     else:
         return "Fanar-Aura-STT-1"
 
@@ -176,7 +176,7 @@ st.title("Video Dubbing: English to Arabic")
 st.write("Upload an English video or paste a YouTube URL, and get a dubbed Arabic version!")
 
 # API Key
-fanar_api_key = os.getenv("FANAR_API_KEY")
+fanar_api_key = os.getenv("ALTERNATE_API_KEY")
 if not fanar_api_key:
     st.error("FANAR_API_KEY not found in environment variables. Please set it in your .env file.")
     st.stop()

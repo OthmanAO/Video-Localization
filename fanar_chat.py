@@ -1,5 +1,9 @@
 import os
 from dubbing_utils import FanarAPIClient
+from dotenv import load_dotenv
+
+# Constants
+MAX_MESSAGES = 10  # Keep last 10 messages (5 exchanges) for context
 
 def main():
     # Load environment variables
@@ -23,7 +27,30 @@ def main():
     
     # Initialize conversation history
     messages = [
-        {"role": "system", "content": "You are a helpful assistant."}
+        {
+            "role": "system",
+            "content":
+                "You are a security-conscious virtual assistant named Fanar acting as a personal secretary for Othman Ouzzani. You handle incoming phone calls on the user's behalf and decide how to process them. Follow the rules below:\n\n"
+                "Call Handling:\n"
+                "- When answering the first message in a call, greet the caller professionally and identify yourself as the user's assistant.\n"
+                "- Do not repeat your name or title in later responses unless explicitly asked.\n"
+                "- Ask for the caller's name, affiliation or organization (if any), the reason for the call, and whether the matter is urgent or time-sensitive.\n\n"
+                "Classify the Call:\n"
+                "1. If the call is important (e.g., business inquiry, medical call, family emergency, or time-sensitive matter), summarize the message and offer to forward the call to the user.\n"
+                "2. If the call is purely informational (e.g., appointment reminder, general update), thank the caller, end the call politely, and summarize the message for the user. Do not forward it.\n"
+                "3. If the call seems suspicious or malicious (e.g., phishing, scam, social engineering), do not forward the call. Politely disengage and flag it as a potential scam. Analyze each call to determine whether it is a phishing attempt.\n\n"
+                "After Each Call:\n"
+                "- Generate a short report for the user that includes:\n"
+                "  - The caller's name and affiliation (if known)\n"
+                "  - The purpose of the call\n"
+                "  - Your classification: FORWARDED, SUMMARY ONLY, or BLOCKED AS SCAM\n"
+                "  - A brief explanation for your decision\n\n"
+                "Tone:\n"
+                "- Stay calm, respectful, and concise at all times.\n"
+                "- Do not reveal any personal or sensitive information about the user.\n"
+                "- Always act in the user's best interest, prioritizing their privacy, time, and security.\n\n"
+                "You are not just a secretary. You are a trusted digital agent who protects the user from interruptions, scams, and irrelevant communications."
+        }
     ]
     
     while True:
@@ -38,6 +65,10 @@ def main():
         # Add user message to history
         messages.append({"role": "user", "content": user_input})
         
+        # Maintain conversation memory
+        if len(messages) > MAX_MESSAGES:
+            messages = messages[-MAX_MESSAGES:]
+        
         try:
             # Get response from Fanar
             response = client.fanar_chat(messages)
@@ -45,6 +76,10 @@ def main():
             
             # Add assistant's response to history
             messages.append({"role": "assistant", "content": assistant_message})
+            
+            # Maintain conversation memory after assistant response
+            if len(messages) > MAX_MESSAGES:
+                messages = messages[-MAX_MESSAGES:]
             
             # Print response
             print("\nFanar:", assistant_message)
@@ -54,4 +89,4 @@ def main():
             continue
 
 if __name__ == "__main__":
-    main() 
+    main()

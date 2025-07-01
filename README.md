@@ -3,27 +3,34 @@
 This project provides a complete pipeline for **localizing English videos into Arabic**, using the [Fanar API](https://fanar.qa). It performs:
 
 1. **Audio extraction** from video
-2. **Speech-to-text** transcription
-3. **Grammar correction** via LLM
-4. **Text translation** to Arabic
-5. **Natural Arabic reformulation** for TTS
-6. **Text-to-speech synthesis**
-7. **Recombination of audio and video**
+2. **Music/vocals separation** (Demucs)
+3. **Speech-to-text** transcription (with smart model selection)
+4. **Grammar improvement** of English transcript (LLM)
+5. **Translation** to Arabic
+6. **Arabic reformulation for TTS** (LLM, concise and natural)
+7. **Extraction of quoted/target speech** for TTS
+8. **Text-to-speech synthesis** (Arabic)
+9. **Duration matching** (pad/trim TTS to match original)
+10. **Music re-mixing** (combine separated music with Arabic TTS)
+11. **Recombination of dubbed audio and video**
 
 ---
 
 ## 🚀 Features
 
-- Extracts audio from any video file
-- Transcribes speech using Fanar STT model
+- Download videos from YouTube or upload your own
+- Extracts and separates music from any video file
+- Transcribes speech using Fanar STT model (auto or manual model selection)
 - Enhances and grammatically corrects transcripts using Fanar Chat
 - Translates English to Arabic using Fanar MT
-- Prepares Arabic text for smooth TTS rendering
+- Reformulates Arabic for smooth, natural TTS (shorter, simpler sentences)
+- Extracts only quoted/target speech for dubbing
 - Generates natural-sounding Arabic audio using Fanar TTS
+- Matches TTS audio duration to original for lip sync
+- Mixes separated music back with dubbed speech
 - Merges audio with the original video (with removed audio)
-- **YouTube video download** support with automatic title extraction
-- **Smart model selection** based on audio length (STT-1 for short, STT-LF-1 for long)
 - **Automatic filename generation** with original title + "arabic dub" suffix
+- **Automatic cleanup** of temporary files (optional)
 
 ---
 
@@ -36,8 +43,8 @@ QCRI2025/
 ├── fanar_chat.py          # Fanar API client utilities
 ├── cleanup.py             # Cleanup script for temporary files
 ├── requirements.txt       # Python dependencies
-├── README.md             # This file
-└── .gitignore            # Git ignore rules
+├── README.md              # This file
+└── .gitignore             # Git ignore rules
 ```
 
 ---
@@ -74,8 +81,11 @@ This removes:
 
 1. Upload a video file or paste a YouTube URL
 2. The app will automatically:
-   - Extract audio and determine duration
-   - Select appropriate transcription model
-   - Process through the full pipeline
+   - Extract audio and separate music/vocals
+   - Transcribe speech and improve grammar
+   - Translate and reformulate Arabic for TTS
+   - Extract quoted/target speech for dubbing
+   - Synthesize Arabic speech, match duration, and mix with music
    - Generate final video with Arabic dub
 3. Download the final video with descriptive filename
+4. (Optional) Enable automatic cleanup, or run `python cleanup.py` manually

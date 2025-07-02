@@ -353,18 +353,22 @@ if input_video_path and os.path.exists(input_video_path):
             st.error(f"Arabic TTS improvement failed: {e}")
             st.stop()
 
-    # Step 5.5: Extract only quoted text for TTS
+    # Step 5.5: Extract quoted text for TTS, or use full text if no quotes found
     quoted_texts = re.findall(r'"([^"]+)"|"([^"]+)"|«([^»]+)»', grammar_text)
     # Flatten and join all non-empty matches
     speech_text = ' '.join([t for group in quoted_texts for t in group if t])
+    
     if not speech_text:
-        st.warning("No text found in quotation marks. TTS will be skipped.")
+        # If no quoted text found, use the full improved text
+        speech_text = grammar_text
+        st.info("No text found in quotation marks. Using full text for TTS.")
+        st.text_area("Text to be used for TTS (full text)", speech_text, height=100)
     else:
         st.text_area("Text to be used for TTS (from quotes only)", speech_text, height=100)
 
     # Step 6: Text-to-Speech
     if speech_text:
-        with st.spinner("Converting quoted Arabic text to speech..."):
+        with st.spinner("Converting Arabic text to speech..."):
             try:
                 output_audio = client.text_to_speech(speech_text, tts_output_file)
                 st.success("TTS complete!")
@@ -374,34 +378,34 @@ if input_video_path and os.path.exists(input_video_path):
                 st.error(f"TTS failed: {e}")
                 st.stop()
     else:
-        output_audio = None
+        st.error("No text available for TTS. This should not happen.")
+        st.stop()
 
     # Step 6.5: Match TTS audio duration to original audio
-    if output_audio:
-        try:
-            # Load original and TTS audio
-            original_audio = AudioSegment.from_file(audio_file)
-            tts_audio = AudioSegment.from_file(tts_output_file)
-            target_duration = len(original_audio)  # in milliseconds
-            tts_duration = len(tts_audio)
+    try:
+        # Load original and TTS audio
+        original_audio = AudioSegment.from_file(audio_file)
+        tts_audio = AudioSegment.from_file(tts_output_file)
+        target_duration = len(original_audio)  # in milliseconds
+        tts_duration = len(tts_audio)
 
-            if tts_duration < target_duration:
-                # Pad with silence at the end
-                silence = AudioSegment.silent(duration=target_duration - tts_duration)
-                adjusted_audio = tts_audio + silence
-            else:
-                # Trim to target duration
-                adjusted_audio = tts_audio[:target_duration]
+        if tts_duration < target_duration:
+            # Pad with silence at the end
+            silence = AudioSegment.silent(duration=target_duration - tts_duration)
+            adjusted_audio = tts_audio + silence
+        else:
+            # Trim to target duration
+            adjusted_audio = tts_audio[:target_duration]
 
-            # Save adjusted audio
-            adjusted_audio.export(tts_output_file, format="wav")
-            st.info(f"TTS audio adjusted to {target_duration/1000:.2f} seconds to match original audio.")
-        except Exception as e:
-            st.error(f"Audio duration adjustment failed: {e}")
-            st.stop()
+        # Save adjusted audio
+        adjusted_audio.export(tts_output_file, format="wav")
+        st.info(f"TTS audio adjusted to {target_duration/1000:.2f} seconds to match original audio.")
+    except Exception as e:
+        st.error(f"Audio duration adjustment failed: {e}")
+        st.stop()
 
     # Step 6.6: Mix separated music with Arabic TTS audio
-    if output_audio and music_path:
+    if music_path:
         try:
             mixed_tts_music_path = "arabic_speech_with_music.wav"
             mix_music_and_tts(music_path, tts_output_file, mixed_tts_music_path)
@@ -412,39 +416,38 @@ if input_video_path and os.path.exists(input_video_path):
             st.stop()
 
     # Step 7: Combine audio and video
-    if output_audio:
-        with st.spinner("Combining dubbed audio with video..."):
-            try:
-                combine_audio_video(tts_output_file, "audioless_video.mp4", output_file)
-                st.success("Dubbed video created!")
-                with open(output_file, "rb") as f:
-                    st.download_button("Download Dubbed Video", f, file_name=final_video_filename)
+    with st.spinner("Combining dubbed audio with video..."):
+        try:
+            combine_audio_video(tts_output_file, "audioless_video.mp4", output_file)
+            st.success("Dubbed video created!")
+            with open(output_file, "rb") as f:
+                st.download_button("Download Dubbed Video", f, file_name=final_video_filename)
+            
+            # Automatic cleanup of temporary files
+            if auto_cleanup:
+                st.subheader("🧹 Cleanup")
+                temp_files = [
+                    audio_file,
+                    transcription_file,
+                    translation_file,
+                    tts_output_file,
+                    audioless_video_file,
+                    "arabic_speech_with_music.wav"
+                ]
                 
-                # Automatic cleanup of temporary files
-                if auto_cleanup:
-                    st.subheader("🧹 Cleanup")
-                    temp_files = [
-                        audio_file,
-                        transcription_file,
-                        translation_file,
-                        tts_output_file,
-                        audioless_video_file,
-                        "arabic_speech_with_music.wav"
-                    ]
-                    
-                    # Add music path if it exists
-                    if 'music_path' in locals() and music_path and os.path.exists(music_path):
-                        temp_files.append(music_path)
-                    
-                    # Clean up temporary files
-                    cleaned_files = cleanup_temp_files(temp_files, keep_final_video=True)
-                    cleanup_demucs_output()
-                    
-                    st.success("✅ Processing complete! Temporary files have been cleaned up.")
-                else:
-                    st.success("✅ Processing complete! Temporary files have been preserved.")
-                    st.info("💡 You can run the cleanup script later: `python cleanup.py`")
+                # Add music path if it exists
+                if 'music_path' in locals() and music_path and os.path.exists(music_path):
+                    temp_files.append(music_path)
                 
-            except Exception as e:
-                st.error(f"Combining audio and video failed: {e}")
-                st.stop()
+                # Clean up temporary files
+                cleaned_files = cleanup_temp_files(temp_files, keep_final_video=True)
+                cleanup_demucs_output()
+                
+                st.success("✅ Processing complete! Temporary files have been cleaned up.")
+            else:
+                st.success("✅ Processing complete! Temporary files have been preserved.")
+                st.info("💡 You can run the cleanup script later: `python cleanup.py`")
+            
+        except Exception as e:
+            st.error(f"Combining audio and video failed: {e}")
+            st.stop()

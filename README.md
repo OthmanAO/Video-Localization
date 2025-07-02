@@ -29,8 +29,8 @@ This project provides a complete pipeline for **localizing English videos into A
 - Matches TTS audio duration to original for lip sync
 - Mixes separated music back with dubbed speech
 - Merges audio with the original video (with removed audio)
-- **Automatic filename generation** with original title + "arabic dub" suffix
-- **Automatic cleanup** of temporary files (optional)
+- Automatic filename generation with original title + "arabic dub" suffix
+- Automatic cleanup of temporary files (optional)
 
 ---
 

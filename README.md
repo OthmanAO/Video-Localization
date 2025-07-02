@@ -37,10 +37,9 @@ This project provides a complete pipeline for **localizing English videos into A
 ## 📁 Project Structure
 
 ```
-QCRI2025/
+FanarVideoLocalization/
 ├── dubbing_ui.py          # Main Streamlit application
 ├── dubbing_utils.py       # Core processing functions and API client
-├── fanar_chat.py          # Fanar API client utilities
 ├── cleanup.py             # Cleanup script for temporary files
 ├── requirements.txt       # Python dependencies
 ├── README.md              # This file

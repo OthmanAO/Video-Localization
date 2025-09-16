@@ -87,4 +87,3 @@ This removes:
    - Synthesize Arabic speech, match duration, and mix with music
    - Generate final video with Arabic dub
 3. Download the final video with descriptive filename
-4. (Optional) Enable automatic cleanup, or run `python cleanup.py` manually
